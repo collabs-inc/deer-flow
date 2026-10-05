@@ -1,0 +1,8 @@
+{
+  "name": "DeerFlow",
+  "description": "A persistent research and productivity agent with artifacts, skills and scheduled tasks. Uses the machine's Claude sign-in through DeerFlow's provider.",
+  "icon": "frontend/public/images/deer.svg",
+  "platforms": ["linux"],
+  "install": "node cube/install.mjs",
+  "start": "sh cube/start.sh"
+}

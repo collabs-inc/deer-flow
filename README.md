@@ -1,5 +1,9 @@
 # 🦌 DeerFlow - 2.0
 
+This fork adds a [Cube app manifest and runtime adapter](./cube/README.md) on the
+`cube-app` branch. It preserves the upstream DeerFlow web interface and stores
+configuration, sessions and workspaces outside the replaceable app checkout.
+
 English | [中文](./README_zh.md) | [日本語](./README_ja.md) | [Français](./README_fr.md) | [Русский](./README_ru.md)
 
 [![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)](./backend/pyproject.toml)

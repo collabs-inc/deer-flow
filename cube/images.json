@@ -1,0 +1,6 @@
+{
+  "version": "2.1.0",
+  "platform": "linux/amd64",
+  "gateway": "ghcr.io/bytedance/deer-flow-backend@sha256:68426f84f06f91a44f61c9620c9badffec162133615d351f1d40db0982a753e6",
+  "frontend": "ghcr.io/bytedance/deer-flow-frontend@sha256:2f10108592ddb2f93ff5c62f670e010cd4123c4e93eed6bc0ce5fd2bf426f0db"
+}
