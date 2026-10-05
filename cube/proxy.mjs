@@ -28,6 +28,14 @@ export function createProxy(ports) {
   }
   const server = http.createServer((req, res) => {
     if (!allowed(req)) { res.writeHead(403); res.end('Forbidden'); return; }
+    const ready = Boolean(ports.gateway && ports.frontend);
+    if (req.url === '/.cube/ready') { res.writeHead(ready ? 204 : 503, { 'cache-control': 'no-store' }); res.end(); return; }
+    if (!ready) {
+      const document = ['GET', 'HEAD'].includes(req.method) && !req.url.startsWith('/api/');
+      res.writeHead(document ? 200 : 503, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'retry-after': '2' });
+      res.end('<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="2"><title>Starting DeerFlow</title><style>:root{color-scheme:light dark}body{font:16px system-ui;display:grid;place-content:center;height:100vh;margin:0}p{opacity:.65}</style></head><body><h2>Starting DeerFlow…</h2><p>Loading the agent workspace. This page will refresh automatically.</p></body></html>');
+      return;
+    }
     if (['GET', 'HEAD'].includes(req.method) && /^\/(?:\?|$)/.test(req.url)) {
       res.writeHead(302, { location: `/workspace${req.url.slice(1)}`, 'cache-control': 'no-store' });
       res.end(); return;
@@ -47,6 +55,7 @@ export function createProxy(ports) {
   server.on('connection', socket => { sockets.add(socket); socket.on('close', () => sockets.delete(socket)); });
   server.on('upgrade', (req, socket, head) => {
     if (!allowed(req, true)) { socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n'); return; }
+    if (!ports.gateway || !ports.frontend) { socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n'); return; }
     const proxy = http.request(options(req));
     proxy.on('upgrade', (response, remote, remoteHead) => {
       sockets.add(remote); remote.on('close', () => sockets.delete(remote));

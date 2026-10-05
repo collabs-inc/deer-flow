@@ -25,6 +25,7 @@ const label = 'computer.cube.deerflow';
 const containers = [];
 const waiters = [];
 let proxy;
+const readyPorts = { gateway: 0, frontend: 0 };
 let stopping = false;
 let networkOwned = false;
 const cmd = (args, timeout = 30000) => exec(docker.docker, ['--host', docker.socket, ...args], { env: docker.env, timeout, maxBuffer: 1024 * 1024 });
@@ -78,6 +79,11 @@ async function launch(target, args) {
 
 try {
   await mkdir(data, { recursive: true, mode: 0o700 });
+  if (!warmup) {
+    proxy = createProxy(readyPorts);
+    proxy.server.listen(port, '127.0.0.1'); await once(proxy.server, 'listening');
+    console.log('Starting DeerFlow containers; the app will refresh when initialization finishes.');
+  }
   await mkdir(path.join(data, 'state'), { recursive: true, mode: 0o700 });
   await createOnce(path.join(data, 'config.yaml'), await readFile(new URL('./config.default.yaml', import.meta.url)));
   await createOnce(path.join(data, 'extensions_config.json'), '{"middlewares":[],"mcpServers":{},"skills":{}}\n');
@@ -98,7 +104,7 @@ try {
     '-e', 'DEER_FLOW_CONFIG_PATH=/cube-data/config.yaml', '-e', 'DEER_FLOW_EXTENSIONS_CONFIG_PATH=/cube-data/extensions_config.json',
     '-e', 'DEER_FLOW_SKILLS_PATH=/cube-data/skills', '-e', 'LANGSMITH_TRACING=false', '-e', 'PYTHONPATH=/app/backend']);
   const frontend = await launch('frontend', [...common, '-p', '127.0.0.1::3000', '-e', 'DEER_FLOW_INTERNAL_GATEWAY_BASE_URL=http://gateway:8001']);
-  const deadline = Date.now() + (warmup ? 180000 : 45000);
+  const deadline = Date.now() + 180000;
   let ready = false;
   while (!stopping && Date.now() < deadline) {
     try {
@@ -111,8 +117,7 @@ try {
   }
   if (!ready) throw new Error('DeerFlow did not become ready. Inspect the owned gateway/frontend Docker logs.');
   if (warmup) { console.log('DeerFlow initialization passed.'); await stop(); }
-  proxy = createProxy({ gateway, frontend });
-  proxy.server.listen(port, '127.0.0.1'); await once(proxy.server, 'listening');
+  Object.assign(readyPorts, { gateway, frontend });
   console.log(`DeerFlow is ready on 127.0.0.1:${port}.`);
 } catch (error) {
   // execFile errors can contain environment or upstream details; never print

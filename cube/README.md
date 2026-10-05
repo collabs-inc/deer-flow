@@ -6,12 +6,16 @@ images pinned by digest in `images.json`. No Next.js or Python dependency build
 happens on the cloud machine.
 
 The machine needs Node 22+, util-linux and rootless Docker. `install.mjs` pulls
-both images and warms migrations before Cube's startup deadline. `start.sh`
+both images without touching live app data during updates. `start.sh`
 ensures the shared Docker daemon is ready, then holds an exclusive app lock and
 supervises the two containers through one foreground Node process. Only loopback
 ports are published. The proxy serves the upstream UI, preserves streaming and
 WebSockets, and rejects foreign browser origins. Opening the app goes directly
 to its agent workspace; upstream documentation remains available at `/docs`.
+Cold Python imports show an explicit starting page that refreshes automatically.
+Backend readiness has a three-minute deadline; failure stops the wrapper rather
+than leaving the starting page up indefinitely. `/.cube/ready` returns 204 only
+after both upstream services are healthy (503 while initializing).
 
 Persistent data is `${XDG_DATA_HOME:-$HOME/.local/share}/cube-deerflow`, or
 `CUBE_DEERFLOW_DATA_DIR`: SQLite history, config, extensions, skills and generated

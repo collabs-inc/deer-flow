@@ -27,6 +27,22 @@ test('opens the agent workspace from Cube instead of the marketing page', async 
   } finally { proxy.close(); }
 });
 
+test('shows bounded initialization without pretending backend APIs are ready', async () => {
+  const ports = { gateway: 0, frontend: 0 };
+  const proxy = createProxy(ports);
+  proxy.server.listen(0, '127.0.0.1'); await once(proxy.server, 'listening');
+  const base = `http://127.0.0.1:${proxy.server.address().port}`;
+  try {
+    const page = await fetch(base);
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /Starting DeerFlow/);
+    assert.equal((await fetch(`${base}/api/models`)).status, 503);
+    assert.equal((await fetch(`${base}/.cube/ready`)).status, 503);
+    ports.gateway = 1; ports.frontend = 1;
+    assert.equal((await fetch(`${base}/.cube/ready`)).status, 204);
+  } finally { proxy.close(); }
+});
+
 test('streams bodies and responses through Cube hosts, rejecting cross-origin mutations', async () => {
   const seen = [];
   const backend = http.createServer((req, res) => {
