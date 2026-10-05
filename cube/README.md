@@ -10,7 +10,8 @@ both images and warms migrations before Cube's startup deadline. `start.sh`
 ensures the shared Docker daemon is ready, then holds an exclusive app lock and
 supervises the two containers through one foreground Node process. Only loopback
 ports are published. The proxy serves the upstream UI, preserves streaming and
-WebSockets, and rejects foreign browser origins.
+WebSockets, and rejects foreign browser origins. Opening the app goes directly
+to its agent workspace; upstream documentation remains available at `/docs`.
 
 Persistent data is `${XDG_DATA_HOME:-$HOME/.local/share}/cube-deerflow`, or
 `CUBE_DEERFLOW_DATA_DIR`: SQLite history, config, extensions, skills and generated

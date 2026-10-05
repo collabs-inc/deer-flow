@@ -17,6 +17,16 @@ test('routes LangGraph, API and frontend paths without losing query strings', ()
   assert.deepEqual(route('/workspace/chats/a'), ['frontend', '/workspace/chats/a']);
 });
 
+test('opens the agent workspace from Cube instead of the marketing page', async () => {
+  const proxy = createProxy({ gateway: 1, frontend: 1 });
+  proxy.server.listen(0, '127.0.0.1'); await once(proxy.server, 'listening');
+  try {
+    const response = await fetch(`http://127.0.0.1:${proxy.server.address().port}/?theme=dark`, { redirect: 'manual' });
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get('location'), '/workspace?theme=dark');
+  } finally { proxy.close(); }
+});
+
 test('streams bodies and responses through Cube hosts, rejecting cross-origin mutations', async () => {
   const seen = [];
   const backend = http.createServer((req, res) => {

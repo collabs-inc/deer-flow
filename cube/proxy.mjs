@@ -28,6 +28,10 @@ export function createProxy(ports) {
   }
   const server = http.createServer((req, res) => {
     if (!allowed(req)) { res.writeHead(403); res.end('Forbidden'); return; }
+    if (['GET', 'HEAD'].includes(req.method) && /^\/(?:\?|$)/.test(req.url)) {
+      res.writeHead(302, { location: `/workspace${req.url.slice(1)}`, 'cache-control': 'no-store' });
+      res.end(); return;
+    }
     const proxy = http.request(options(req), response => {
       const headers = { ...response.headers };
       delete headers['access-control-allow-origin'];
