@@ -1,5 +1,7 @@
-import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { spawn, spawnSync } from 'node:child_process';
+import { mkdir, readFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ensureDocker } from './ensure-docker.mjs';
 
@@ -16,5 +18,13 @@ for (const target of ['gateway', 'frontend']) {
 }
 // First migrations/initialization happen during install, outside Cube's 60s
 // startup budget. The warm-up stops only its own two containers afterwards.
-await run('sh', [fileURLToPath(new URL('./start.sh', import.meta.url))], { ...config.env, PORT: '0', CUBE_DEERFLOW_WARMUP: '1' });
+const data = process.env.CUBE_DEERFLOW_DATA_DIR || path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local/share'), 'cube-deerflow');
+await mkdir(data, { recursive: true, mode: 0o700 });
+const lock = spawnSync('flock', ['--nonblock', path.join(data, '.app.lock'), 'true']);
+if (lock.error || (lock.status !== 0 && lock.status !== 1)) throw new Error('Cannot check DeerFlow app lock.');
+if (lock.status === 0) {
+  await run('sh', [fileURLToPath(new URL('./start.sh', import.meta.url))], { ...config.env, PORT: '0', CUBE_DEERFLOW_WARMUP: '1' });
+} else {
+  console.log('An existing DeerFlow is running; leave its data untouched until Cube switches versions.');
+}
 console.log('DeerFlow is installed and initialized.');
