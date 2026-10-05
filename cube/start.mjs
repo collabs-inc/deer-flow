@@ -58,10 +58,13 @@ async function launch(target, args) {
   const name = `${prefix}-${target}`;
   await removeStale(name);
   containers.push(name);
-  await cmd(['run', '--detach', '--name', name, '--label', `${label}=${identity}`, '--platform', images.platform,
+  // Creation can be slow. An interrupted create leaves only a stopped owned
+  // container; start never runs before its name exists for stop/remove.
+  await cmd(['create', '--name', name, '--label', `${label}=${identity}`, '--platform', images.platform,
     '--network', prefix, '--network-alias', target, '--log-opt', 'max-size=5m', '--log-opt', 'max-file=2',
     ...args, images[target]], 45000);
   if (stopping) { await cmd(['rm', '-f', name]); throw new Error('Stopped during startup.'); }
+  await cmd(['start', name]);
   const waiter = spawn(docker.docker, ['--host', docker.socket, 'wait', name], { env: docker.env, stdio: 'ignore' });
   waiters.push(waiter);
   waiter.on('error', () => { if (!stopping) void stop(1); });

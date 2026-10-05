@@ -2,11 +2,12 @@ import http from 'node:http';
 
 export function allowed(req, websocket = false) {
   if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return false;
+  if (typeof req.headers.host !== 'string' || /[\s/@?#\\]/.test(req.headers.host)) return false;
   let host;
   try { host = new URL(`http://${req.headers.host}`); } catch { return false; }
   if (!['127.0.0.1', 'localhost', '[::1]'].includes(host.hostname) && !/^[a-z0-9][a-z0-9-]*-[a-z0-9]{8}(?:-stg)?\.cube\.site$/.test(host.hostname)) return false;
   const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  if (req.headers.origin && req.headers.origin !== `${proto}://${req.headers.host}`) return false;
+  if ((websocket || req.headers.origin) && req.headers.origin !== `${proto}://${req.headers.host}`) return false;
   const unsafe = websocket || !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
   const site = req.headers['sec-fetch-site'];
   if (site && !['same-origin', 'none'].includes(site) && (unsafe || !['document', 'iframe'].includes(req.headers['sec-fetch-dest']))) return false;

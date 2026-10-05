@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { once } from 'node:events';
-import { createProxy, route } from './proxy.mjs';
+import { allowed, createProxy, route } from './proxy.mjs';
+
+test('websocket requests require an origin and host rejects userinfo', () => {
+  const request = { socket: { remoteAddress: '127.0.0.1' }, method: 'GET', headers: { host: 'localhost:3000' } };
+  assert.equal(allowed(request, true), false);
+  assert.equal(allowed({ ...request, headers: { host: 'evil@localhost:3000' } }), false);
+});
 
 test('routes LangGraph, API and frontend paths without losing query strings', () => {
   assert.deepEqual(route('/api/langgraph/threads?limit=2'), ['gateway', '/api/threads?limit=2']);
